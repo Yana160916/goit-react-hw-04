@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchBar/SearchBar.jsx';
 import ImageGallery from '../components/ImageGallery/ImageGallery.jsx';
 import Loader from '../components/Loader/Loader.jsx';
@@ -14,48 +14,50 @@ const App = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [query, setQuery] = useState('');
 
-  const handleSearchSubmit = async (query) => {
+  useEffect(() => {
+    const fetchImages = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `https://api.unsplash.com/search/photos?query=${query}&page=${page}&client_id=Tj-Ibog63A5CLWSYTiYkR2ZJsHj70wgWJUjcrbLwQw4`
+        );
+        const data = await response.json();
+        setImages((prevImages) => {
+          if (page === 1) {
+            return data.results.map((image) => ({
+              ...image,
+              views: 0,
+              description: image.alt_description,
+            }));
+          } else {
+            return [...prevImages, ...data.results.map((image) => ({
+              ...image,
+              views: 0,
+              description: image.alt_description,
+            }))];
+          }
+        });
+      } catch (error) {
+        setError('Error fetching images. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (query !== '') {
+      fetchImages();
+    }
+  }, [query, page]);
+
+  const handleSearchSubmit = (query) => {
     setQuery(query);
     setPage(1);
+    setImages([]);
     setError(null);
-    setLoading(true);
-
-    try {
-      const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${query}&page=${page}&client_id=Tj-Ibog63A5CLWSYTiYkR2ZJsHj70wgWJUjcrbLwQw4`
-      );
-      const data = await response.json();
-      setImages(data.results.map(image => ({
-        ...image,
-        views: 0,
-        description: image.alt_description // Добавляем свойство для хранения описания изображения
-      })));
-    } catch (error) {
-      setError('Error fetching images. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
   };
 
-  const handleLoadMore = async () => {
-    setPage(page + 1);
-    setLoading(true);
-
-    try {
-      const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${query}&page=${page}&client_id=Tj-Ibog63A5CLWSYTiYkR2ZJsHj70wgWJUjcrbLwQw4`
-      );
-      const data = await response.json();
-      setImages([...images, ...data.results.map(image => ({
-        ...image,
-        views: 0,
-        description: image.alt_description // Добавляем свойство для хранения описания изображения
-      }))]);
-    } catch (error) {
-      setError('Error fetching more images. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
+  const handleLoadMore = () => {
+    setPage((prevPage) => prevPage + 1);
   };
 
   const openModal = (imageUrl) => {
@@ -77,8 +79,8 @@ const App = () => {
         <ImageModal
           isOpen={selectedImage}
           imageUrl={selectedImage}
-          views={images.find(image => image.urls.regular === selectedImage).views}
-          description={images.find(image => image.urls.regular === selectedImage).description} // Передаем описание выбранного изображения
+          views={images.find((image) => image.urls.regular === selectedImage).views}
+          description={images.find((image) => image.urls.regular === selectedImage).description}
           onRequestClose={closeModal}
         />
       )}

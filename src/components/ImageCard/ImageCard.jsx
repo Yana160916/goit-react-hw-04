@@ -1,7 +1,9 @@
-const ImageCard = ({ imageUrl }) => {
+import styles from '../ImageCard/ImageCard.module.css';
+
+const ImageCard = ({ imageUrl, altDescription, onClick }) => {
   return (
-    <div>
-      <img src={imageUrl} alt="Large version of the image" />
+    <div className={styles.imageCard} onClick={onClick}>
+      <img src={imageUrl} alt={altDescription} />
     </div>
   );
 };
